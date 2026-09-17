@@ -3,7 +3,7 @@
 **A toy archipelago where the planes actually think.**
 
 A show-and-tell capability study for [Jev](https://typesafe.ai), TypeSafe's System One
-decision model — built the way modern demos get built: **visuals by GPT-6 Astra** through
+decision model: **visuals by GPT-6 Astra** through
 the [Dream Loop](#how-the-presentation-was-made) skill, **simulation and ATC logic by
 GLM 5.3**, and **every in-flight judgment made live by Jev**: divert or continue, declare
 an emergency or keep it routine, give way, hold, even *who lands first* when two aircraft
