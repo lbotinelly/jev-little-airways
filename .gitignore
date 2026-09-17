@@ -1,0 +1,15 @@
+# never commit secrets
+typesafe.key.txt
+*.key
+*.key.txt
+
+# local runtime noise
+server.log
+*.log
+node_modules/
+
+# working state
+.dream-loop/
+
+# heavy source recording (converted to jev-demo.mp4)
+resources/screenshots/jev.gif

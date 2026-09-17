@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Little Airways — Golden Hour</title>
+<meta name="description" content="A miniature island world, little planes, and a sky full of decisions. A self-contained Three.js demo.">
+<style>
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#b9cbd3;color:#f5ead6;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:0}
+  canvas:focus-visible{outline:2px solid #e4c780;outline-offset:-2px}
+  #loading{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;background:radial-gradient(ellipse at 85% 0%,#e9c49e66,transparent 65%)}
+  #card{width:min(430px,90vw);padding:28px 30px;border:1px solid #f1dbb33d;border-radius:22px;background:#273548ed;box-shadow:0 18px 70px #19364833}
+  h1{margin:8px 0 7px;font-weight:550;font-size:30px;letter-spacing:-.02em}
+  p{font-size:14px;line-height:1.65;color:#c1ccd1}
+  small{font-size:11px;text-transform:uppercase;letter-spacing:.17em;color:#efcb80}
+  #error-details{font-size:11px;white-space:pre-wrap;color:#f5b4a0;overflow-wrap:anywhere}
+  [hidden]{display:none!important}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .sr:focus-within{position:fixed;width:auto;height:auto;clip-path:none;left:20px;bottom:20px;right:20px;padding:15px;background:#233243;border-radius:12px;z-index:10;white-space:normal}
+  .sr button{margin:3px;padding:10px;background:#3f5064;color:#fff4dd;border:1px solid #829196;border-radius:8px}
+  /* Decision-engine panel (real DOM so paste/password managers work; the rest of the HUD is in-scene). */
+  #api-panel{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:5}
+  #api-panel[hidden]{display:none}
+  .ap-card{pointer-events:auto;width:min(560px,92vw);max-height:88vh;overflow:auto;padding:26px 28px;border:1px solid #f1dbb33d;border-radius:18px;background:#273548f2;box-shadow:0 18px 70px #19364866}
+  .ap-card h2{margin:8px 0 6px;font-weight:550;font-size:24px;letter-spacing:-.02em;color:#f8f1df}
+  .ap-card p{margin:0 0 14px}
+  .ap-card label{display:block;margin:12px 0 5px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#efcb80}
+  .ap-row{display:flex;gap:8px}
+  .ap-row input{flex:1;padding:10px 12px;font:inherit;font-size:13px;color:#f8f1df;background:#1c2735;border:1px solid #8c9caa66;border-radius:10px;outline:0}
+  .ap-row input:focus-visible{border-color:#f2d286}
+  .ap-meta,.ap-note,.ap-status{display:flex;gap:8px;align-items:baseline;font-size:11px;color:#b3c3c8;margin-top:10px}
+  .ap-meta code,.ap-note code{font-size:11px;color:#7ec7df}
+  .ap-status{justify-content:space-between;color:#9ed4ab}
+  .ap-error{margin-top:10px;padding:8px 10px;font-size:12px;color:#f5b4a0;background:#4a2e2a;border-radius:8px}
+  .ap-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+  .ap-actions button{padding:10px 14px;font:inherit;font-size:12.5px;color:#f8f1df;background:#3c495a;border:1px solid #82919655;border-radius:10px;cursor:pointer}
+  .ap-actions button:hover{background:#516072}
+  .ap-actions button.primary{background:#a3653f;border-color:#e4a37366}
+  .ap-actions button.primary:hover{background:#c07a4e}
+  .ap-actions button#api-show{padding:10px 12px}
+  /* Jev monitor drawer (decisions + API exchanges in Jev format). */
+  #jev-monitor{position:fixed;top:0;right:0;bottom:0;width:min(540px,94vw);display:flex;flex-direction:column;background:#1e2634f5;border-left:1px solid #8c9caa55;box-shadow:-18px 0 60px #14233080;z-index:6;transform:translateX(102%);transition:transform .25s ease;font-size:12px}
+  #jev-monitor.jm-open{transform:translateX(0)}
+  .jm-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+  .jm-title{font-size:14px;font-weight:600;letter-spacing:.14em;color:#f2d286}
+  .jm-live{width:8px;height:8px;border-radius:50%;background:#9ed4ab;opacity:.35}
+  .jm-live.jm-flash{animation:jmpulse .9s ease-out}
+  @keyframes jmpulse{0%{opacity:1;box-shadow:0 0 0 0 #9ed4ab88}100%{opacity:.35;box-shadow:0 0 0 10px #9ed4ab00}}
+  .jm-icon{margin-left:auto;padding:4px 9px;font:inherit;color:#b3c3c8;background:#3c495a;border:1px solid #82919655;border-radius:8px;cursor:pointer}
+  .jm-stats{display:flex;justify-content:space-between;gap:10px;padding:0 16px 10px;color:#9ed4ab;border-bottom:1px solid #8c9caa33}
+  .jm-section{padding:10px 12px 6px;display:flex;flex-direction:column;min-height:0}
+  .jm-grow{flex:1}
+  .jm-h{font-size:10.5px;letter-spacing:.14em;color:#efcb80;margin:2px 4px 8px}
+  .jm-hint{color:#7f969f;letter-spacing:.02em;text-transform:none;font-weight:400}
+  .jm-planes{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;max-height:200px;overflow:auto;padding-right:2px}
+  .jm-plane{--c:#8c9caa;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:8px 10px;font:inherit;text-align:left;color:#f8f1df;background:#273548d9;border:1px solid var(--c);border-left-width:4px;border-radius:9px;cursor:pointer}
+  .jm-plane:hover{background:#31405a}
+  .jm-plane.jm-active{background:#3c495a;outline:1px solid var(--c)}
+  .jm-p-id{font-weight:600}
+  .jm-p-phase{font-size:10px;letter-spacing:.1em;color:#9ed4ab}
+  .jm-p-phase.jm-bad{color:#f29882}
+  .jm-p-route{font-size:12px;color:#f2d286}
+  .jm-p-sub{font-size:10.5px;color:#b3c3c8}
+  .jm-feed{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:2px 4px 10px 2px}
+  .jm-ex{--c:#8c9caa;background:#273548c9;border:1px solid #8c9caa44;border-left:4px solid var(--c);border-radius:9px;overflow:hidden;flex:none}
+  .jm-ex.jm-err{border-left-color:#f2574d}
+  .jm-ex-head{display:flex;align-items:center;gap:8px;padding:7px 10px;min-height:36px;color:#f8f1df}
+  .jm-dot{width:7px;height:7px;border-radius:50%;background:var(--c);flex:none}
+  .jm-ex-id{font-weight:600}
+  .jm-ex-q{color:#7f969f;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .jm-ex-time{margin-left:auto;color:#7f969f;font-size:10.5px;flex:none}
+  .jm-ex-lat{color:#9ed4ab;flex:none}
+  .jm-ex-tok{color:#7f969f;font-size:10.5px;flex:none}
+  .jm-h{display:flex;align-items:center;gap:8px}
+  .jm-pause{margin-left:auto;padding:3px 11px;font:inherit;font-size:10.5px;letter-spacing:.08em;color:#f8f1df;background:#3c495a;border:1px solid #82919688;border-radius:7px;cursor:pointer}
+  .jm-pause:hover{background:#516072}
+  .jm-pause.jm-on{color:#1e2634;background:#f2d286;border-color:#f2d286;font-weight:600}
+  .jm-new{color:#f2d286;font-size:10.5px}
+  .jm-ex-body summary{display:flex;align-items:center;gap:7px;padding:7px 10px;color:#d8edf5;font-size:11.5px;letter-spacing:.05em;cursor:pointer;user-select:none;list-style:none;border-top:1px solid #8c9caa44}
+  .jm-ex-body summary::-webkit-details-marker{display:none}
+  .jm-ex-body summary::before{content:'\25B8';color:#7ec7df;font-size:10px}
+  .jm-ex-body details[open]>summary::before{content:'\25BE'}
+  .jm-ex-body summary:hover{background:#31405a;color:#fff}
+  .jm-lab{padding:6px 10px 2px;color:#efcb80;font-size:10.5px}
+  .jm-json{margin:2px 10px 8px;padding:8px 10px;max-height:280px;overflow:auto;font:11px/1.5 ui-monospace,Consolas,monospace;color:#dfe7ea;background:#141c28;border-radius:8px;white-space:pre}
+  .jm-key{color:#7ec7df}.jm-str{color:#9ed4ab}.jm-num{color:#c2a0ed}.jm-kw{color:#f29882}
+</style>
+<!--
+  Source layout (decomposed from the original single-file build):
+    js/browser.mjs    entry point: DOM events, wall clock, public APIs
+    js/world.mjs      scene, simulation, DecisionClient + mock provider
+    js/hud.mjs        in-scene 2D HUD painter
+    js/font-atlas.mjs embedded bitmap font atlas
+  three.js r186 loads from CDN via the import map below (MIT):
+    https://github.com/mrdoob/three.js — Copyright (c) 2010-2026 three.js authors
+  The original packed HTML is archived at ../archive/little-airways-packed-original.html
+-->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.webgpu.js",
+    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.tsl.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="world" tabindex="0" aria-label="Little Airways interactive 3D archipelago" aria-describedby="instructions"></canvas>
+<p class="sr" id="instructions">Click an aircraft or press Tab to select one. Keys 1 through 5 toggle engine, radio, radar, fuel leak, and hydraulic failures. R restores the selected plane. Space pauses. Drag to orbit. Scroll to zoom. Home resets the view. H shows help. C hides the interface. J opens the Jev data monitor. The mock probabilities are illustrative, not real aviation predictions.</p>
+<nav class="sr" aria-label="Accessible flight controls"><button data-command="next">Next aircraft</button><button data-command="fault:engine">Toggle engine failure</button><button data-command="fault:radio">Toggle radio failure</button><button data-command="fault:radar">Toggle radar failure</button><button data-command="fault:fuel">Toggle fuel leak</button><button data-command="fault:hydraulics">Toggle hydraulics failure</button><button data-command="repair">Restore systems</button><button data-command="pause">Pause or resume</button><button data-command="help">Help</button></nav>
+<div id="loading" role="status"><div id="card"><small>A pocketful of sunshine</small><h1>Little Airways</h1><p id="status">Unpacking a small world…</p><pre id="error-details"></pre></div></div>
+<div id="api-panel" hidden role="dialog" aria-modal="true" aria-labelledby="api-title">
+  <div class="ap-card">
+    <small>Decision engine</small>
+    <h2 id="api-title">One small API. A whole sky.</h2>
+    <p>Every aircraft choice goes through the same validated decision boundary. Swap the mock for Jev — TypeSafe's System One model — and the same sky flies on real probabilities and confidence.</p>
+    <label for="api-key">TypeSafe API key</label>
+    <div class="ap-row">
+      <input id="api-key" type="password" placeholder="paste your key" autocomplete="off" spellcheck="false" aria-label="TypeSafe API key">
+      <button id="api-show" type="button">show</button>
+    </div>
+    <div class="ap-meta"><span>endpoint</span><code>/jev&nbsp;→&nbsp;api.typesafe.ai/v1/systemone</code></div>
+    <div class="ap-note"><span>note</span><span>The key lives only in this browser's localStorage and is sent only to your local proxy. Serve with <code>node server.mjs</code> (api.typesafe.ai allows no localhost CORS origins). <code>console.typesafe.ai/keys</code> issues keys.</span></div>
+    <div id="api-error" class="ap-error" hidden></div>
+    <div class="ap-actions">
+      <button id="api-connect" class="primary" type="button">Fly on Jev</button>
+      <button id="api-mock" type="button">Use mock</button>
+      <button id="api-export" type="button">Save state + API sample</button>
+      <button id="api-close" type="button">Close</button>
+    </div>
+    <div class="ap-status" id="api-status"><span>provider / —</span><span>0 calls · 0 errors</span></div>
+  </div>
+</div>
+<script>
+  // Fallback hint if modules never arrive (offline / CDN unreachable).
+  setTimeout(()=>{
+    if(!globalThis.__chatDreamLoop){
+      const s=document.getElementById('status'),e=document.getElementById('error-details');
+      s.textContent='The demo could not load.';
+      e.textContent='three.js r186 is fetched from cdn.jsdelivr.net — check your connection (or open ../archive/little-airways-packed-original.html, which embeds everything offline).';
+    }
+  },25000);
+</script>
+<script type="module" src="./js/browser.mjs"></script>
+</body>
+</html>
