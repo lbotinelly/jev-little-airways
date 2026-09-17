@@ -13,7 +13,7 @@ want the same runway.
 > traffic) — and all decisions come back from the model as typed probabilities with
 > calibrated confidence, in about 150 ms.
 
-![Little Airways flying on live Jev](resources/screenshots/jev-demo.mp4)
+https://github.com/user-attachments/assets/3edd2a58-b86f-4e79-9756-282cd60ce3c3
 
 ---
 
