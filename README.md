@@ -79,7 +79,7 @@ The world wasn't hand-modeled — it was dreamt:
 
 1. **Target render.** A generated "playful snowglobe ATC diorama" image was locked as
    the target (`resources/dream-loop/target-render.png`).
-2. **Dream Loop, two agents.** The [Dream Loop](https://github.com/agents/skills) skill
+2. **Dream Loop, two agents.** The [Dream Loop](https://github.com/achimala/dream-loop) skill
    orchestrates subagents to iterate a live build toward the target render. GPT-6 Astra
    ran it and produced the single-file build you can still run offline
    (`originals/little-airways-astra-single-file.html`). In parallel, GLM 5.3 ran its own
